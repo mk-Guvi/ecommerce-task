@@ -1,3 +1,4 @@
+import { apiEndpoints } from "@/constants/apiEndPoints";
 import { CartItem, Order } from "../types";
 import axios from "axios";
 
@@ -8,16 +9,16 @@ class Store {
   private orderCount: number = 0;
   private readonly DISCOUNT_INTERVAL: number = 3;
   private readonly DISCOUNT_PERCENTAGE: number = 0.1;
-    
+
   getCart(): CartItem[] {
     return this.cart;
   }
 
   async addToCart(productId: number, quantity: number): Promise<void> {
     const productResponse = await axios.get(
-      `https://dummyjson.com/products/${productId}`
+      `${apiEndpoints.products}/${productId}`
     );
-    console.log(productResponse, "--");
+    
     if (productResponse?.data?.id) {
     } else throw new Error("Product not found");
 
@@ -31,7 +32,7 @@ class Store {
         product: {
           id: productResponse?.data?.id,
           images: productResponse?.data?.images || [],
-          name: productResponse?.data?.title,
+          title: productResponse?.data?.title,
           price: productResponse?.data?.price,
         },
         quantity,
