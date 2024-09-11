@@ -1,6 +1,7 @@
 import { apiEndpoints } from "@/constants/apiEndPoints";
 import { CartItem, Order } from "../types";
 import axios from "axios";
+import { LANG } from "@/constants";
 
 class Store {
   private cart: CartItem[] = [];
@@ -16,18 +17,29 @@ class Store {
 
   async addToCart(productId: number, quantity: number): Promise<void> {
     const productResponse = await axios.get(
-      `${apiEndpoints.products}/${productId}`
+      `${apiEndpoints.products}/${productId}`,
+      {
+        validateStatus: () => true,
+      }
     );
-    
-    if (productResponse?.data?.id) {
-    } else throw new Error("Product not found");
+    if (!productResponse?.data?.id) {
+      throw new Error("Product not found");
+    }
 
     const existingItem = this.cart.find(
       (item) => item.product.id === productId
     );
+
     if (existingItem) {
-      existingItem.quantity += quantity;
+      const updatedQuantity = existingItem.quantity + quantity;
+      if (updatedQuantity > productResponse?.data?.stock) {
+        throw new Error(LANG.QUANTITY_EXCEEDED_ERR_MESSAGE);
+      }
+      existingItem.quantity = updatedQuantity;
     } else {
+      if (quantity > productResponse?.data?.stock) {
+        throw new Error(LANG.QUANTITY_EXCEEDED_ERR_MESSAGE);
+      }
       this.cart.push({
         product: {
           id: productResponse?.data?.id,
@@ -51,16 +63,16 @@ class Store {
       }
       return item.product.id !== productId;
     });
-    if(isItemFound){
-        return {
-            type:"success",
-            message:"Deleted Successfully"
-        }
-    }else{
-        return {
-            type:"error",
-            message:"Invalid product id"
-        }
+    if (isItemFound) {
+      return {
+        type: "success",
+        message: "Deleted Successfully",
+      };
+    } else {
+      return {
+        type: "error",
+        message: "Invalid product id",
+      };
     }
   }
 

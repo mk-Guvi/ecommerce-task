@@ -10,6 +10,8 @@ import {
   ProductsPagination,
 } from "./products/productsComponents";
 import { useChangeListener } from "@/hooks.ts";
+import { toast } from "sonner";
+import { LANG } from "@/constants";
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -17,6 +19,9 @@ export default function Home() {
   const [pageNumber, setPageNumber] = useState(1);
   const [changeWatcher, recordChanges] = useChangeListener(500);
   const [totalPages, setTotalPages] = useState(0);
+  const [disabledActions, setDisabledActionId] = useState<
+    Record<string, boolean>
+  >({});
 
   useEffect(() => {
     getProducts();
@@ -51,30 +56,114 @@ export default function Home() {
     }
   };
 
-  const handleChangePageNumber = useCallback((value: number) => {
-    setPageNumber(value);
-    recordChanges();
-  }, [recordChanges]);
+  const handleChangePageNumber = useCallback(
+    (value: number) => {
+      setPageNumber(value);
+      recordChanges();
+    },
+    [recordChanges]
+  );
+  const addToCart = async (product: Product, quantity: number) => {
+    try {
+      setDisabledActionId((prev) => ({ ...prev, [product.id]: true }));
+      const response = await axios.post(
+        apiEndpoints.carts,
+        {
+          productId: product.id,
+          quantity,
+        },
+        {
+          validateStatus: () => true,
+        }
+      );
+      if (response?.data?.type === "success") {
+        toast("Success", {
+          description: `Successfully added to the cart`,
+          className: "!bg-white",
+          closeButton: true,
+        });
+      } else {
+        throw new Error(response?.data?.message || LANG.NETWORK_ERROR);
+      }
+    } catch (e) {
+      console.log(e);
+      const errorMessage = (e as Error).message || LANG.NETWORK_ERROR;
+
+      toast("Error", {
+        description: errorMessage,
+        className: "!bg-white",
+        closeButton: true,
+      });
+    } finally {
+      setDisabledActionId((prev) => ({ ...prev, [product.id]: false }));
+    }
+  };
+
+  const handleAddToCart = async (evnt: React.MouseEvent<HTMLElement>) => {
+    evnt.stopPropagation();
+    const target = evnt?.target as HTMLElement;
+
+    if (target?.id.includes("atc")) {
+      const getProductDetails = products.find(
+        (e) => `atc-${e.id}` === target?.id
+      );
+
+      if (getProductDetails) {
+        const getProductQuantity = document.getElementById(
+          `qty-${getProductDetails.id}`
+        ) as HTMLInputElement;
+
+        if (Number.isNaN(getProductQuantity.valueAsNumber)) {
+          toast("Invalid Quanity", {
+            description: `Enter a valid quanity.`,
+            className: "!bg-white",
+            closeButton: true,
+          });
+          return;
+        }
+        if (
+          getProductQuantity?.valueAsNumber > (getProductDetails?.stock || 0)
+        ) {
+          toast("Quantity Exceeded", {
+            description: `Max Stock is ${getProductDetails.stock || 1}`,
+            className: "!bg-white",
+            closeButton: true,
+          });
+        } else {
+          addToCart(getProductDetails, getProductQuantity.valueAsNumber);
+        }
+      }
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Products</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-12">
+      <div
+        className="grid grid-cols-1 w-full sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-12"
+        onClick={handleAddToCart}
+      >
         {loading
           ? Array.from({ length: 15 }).map((_, index) => (
               <ProductCardLoader key={index} />
             ))
           : products.map((product) => (
-              <ProductCard product={product} key={product.id} />
+              <ProductCard
+                product={product}
+                disabledActions={disabledActions}
+                key={product.id}
+              />
             ))}
       </div>
-      <div className="mt-8">
-        <ProductsPagination
-          totalPages={totalPages}
-          currentPageNumber={pageNumber}
-          onClickPage={handleChangePageNumber}
-        />
-      </div>
+      {totalPages ? (
+        <div className="mt-8">
+          <ProductsPagination
+            totalPages={totalPages}
+            currentPageNumber={pageNumber}
+            onClickPage={handleChangePageNumber}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

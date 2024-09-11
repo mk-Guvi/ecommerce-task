@@ -11,6 +11,7 @@ export async function POST(
 ): Promise<NextResponse<ApiResponse<CartItem[]>>> {
   try {
     const { productId, quantity } = await request.json();
+
     await store.addToCart(productId, quantity);
     return NextResponse.json({ type: "success", data: store.getCart() });
   } catch (error) {

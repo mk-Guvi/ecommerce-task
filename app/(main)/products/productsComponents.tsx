@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Product } from "@/types";
 import Image from "next/image";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   Carousel,
   CarouselContent,
@@ -21,9 +21,9 @@ import {
 
 export function ProductCardLoader() {
   return (
-    <div className="flex flex-col space-y-2">
-      <Skeleton className="h-[150px] bg-gray-200 w-[250px] rounded-xl" />
-      <div className="gap-2 flex justify-evenly">
+    <div className="flex flex-col space-y-2 w-full sm:w-[250px] ">
+      <Skeleton className="h-[150px] bg-gray-200  w-full  rounded-xl" />
+      <div className="gap-2 flex-wrap flex w-full justify-evenly">
         <Skeleton className="h-8 bg-gray-300 flex-1" />
         <Skeleton className="h-8 bg-gray-300 flex-1" />
       </div>
@@ -32,43 +32,55 @@ export function ProductCardLoader() {
 }
 interface ProductCardPropsI {
   product: Product;
+  disabledActions: Record<string, boolean>;
 }
 export const ProductCard = (props: ProductCardPropsI) => {
-  const { product } = props;
+  const { product, disabledActions } = props;
   return (
-    <div className="flex flex-col space-y-1">
-      <Carousel className="h-[150px] w-[250px]">
+    <Card className="flex py-4 flex-col space-y-1 w-full sm:w-[250px]">
+      <Carousel className="h-[150px] w-full">
         <CarouselContent className="h-[150px] p-4 w-full">
           {product.images.map((e, index) => (
             <CarouselItem key={index} className="h-[120px]  ">
-                <Card>
-              <Image
-                src={e}
-                className="object-contain h-[120px] !w-full"
-                alt={product.title}
-                width={100}
-                height={20}
-              />
+              <Card>
+                <Image
+                  src={e}
+                  className="object-contain h-[120px] !w-full"
+                  alt={product.title}
+                  width={100}
+                  height={20}
+                />
               </Card>
             </CarouselItem>
           ))}
         </CarouselContent>
       </Carousel>
 
-      <p className="p-2 text-sm ">{product.title}</p>
+      <p className="p-2 text-sm truncate text-center" title={product.title}>
+        {product.title}
+      </p>
 
-      <div className="gap-2 items-center flex">
-        <p>${product.price}</p>
+      <div className="gap-2 items-center justify-center flex">
+        <p className="text-sm truncate" title={`$${product.price}`}>
+          ${product.price}
+        </p>
         <Input
           className="w-16"
           min={1}
+          id={`qty-${product.id}`}
           max={product?.stock}
           defaultValue={1}
           type="number"
         />
-        <Button size={"sm"}>Add To Cart</Button>
+        <Button
+          size={"sm"}
+          id={`atc-${product.id}`}
+          disabled={disabledActions?.[product.id]}
+        >
+          Add To Cart
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 };
 
@@ -111,13 +123,13 @@ export function ProductsPagination(props: ProductsPaginationPropsI) {
   };
 
   const handlePrevClick = () => {
-    if (currentPageNumber > 1) {
+    if (totalPages && currentPageNumber > 1) {
       onClickPage(currentPageNumber - 1);
     }
   };
 
   const handleNextClick = () => {
-    if (currentPageNumber < totalPages) {
+    if (totalPages && currentPageNumber < totalPages) {
       onClickPage(currentPageNumber + 1);
     }
   };
@@ -129,7 +141,9 @@ export function ProductsPagination(props: ProductsPaginationPropsI) {
           <PaginationPrevious
             onClick={handlePrevClick}
             className={
-              currentPageNumber === 1 ? "opacity-50 cursor-not-allowed" : ""
+              !totalPages || currentPageNumber === 1
+                ? "opacity-50 cursor-not-allowed"
+                : ""
             }
           />
         </PaginationItem>
@@ -138,7 +152,7 @@ export function ProductsPagination(props: ProductsPaginationPropsI) {
           <PaginationNext
             onClick={handleNextClick}
             className={
-              currentPageNumber === totalPages
+              !totalPages || currentPageNumber === totalPages
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             }
