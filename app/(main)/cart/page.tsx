@@ -40,7 +40,7 @@ function CartPage() {
     try {
       const response = await axios.get(apiEndpoints.getDiscount);
       if (response?.data?.type === "success") {
-        setDiscountCode(response?.data?.discountCode);
+        setDiscountCode(response?.data?.data?.discountCode);
       } else {
         throw new Error("Failed to get Discount code");
       }
@@ -265,11 +265,11 @@ function CartPage() {
           {getDiscountValue ? (
             <>
             <p>
-              Discount Applied({discountCode?.name}) : {getDiscountValue}
+              Discount Applied({discountCode?.name}) : -{getDiscountValue}
             </p>
 
             <p>
-              Total({discountCode?.name}) : {cartDetails.total-getDiscountValue}
+              Total : {cartDetails.total-getDiscountValue}
             </p>
             
             </>
