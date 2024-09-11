@@ -8,7 +8,7 @@ class Store {
   private orders: Order[] = [];
   private discountCodes: DiscountCode[] = [];
   private orderCount: number = 0;
-  private readonly DISCOUNT_INTERVAL: number = 3;
+  private readonly DISCOUNT_INTERVAL: number = 2;
   private readonly DISCOUNT_PERCENTAGE: number = 10;
 
   getCartDetails(): GetCartItems {
@@ -155,7 +155,7 @@ class Store {
   }
 
   public generateDiscountCode(): DiscountCode|string {
-    
+    console.log(this.orderCount)
     if (this.orderCount && (this.orderCount % this.DISCOUNT_INTERVAL) === 0) {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const data:DiscountCode={
