@@ -155,7 +155,7 @@ class Store {
   }
 
   public generateDiscountCode(): DiscountCode|string {
-    console.log(this.orderCount,"this.orderCount")
+    
     if (this.orderCount && this.orderCount % this.DISCOUNT_INTERVAL === 0) {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const data:DiscountCode={
