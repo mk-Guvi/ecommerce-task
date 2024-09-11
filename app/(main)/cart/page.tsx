@@ -128,9 +128,9 @@ function CartPage() {
   const getDiscountValue = useMemo(() => {
     if (discountCode?.value && discountCode.type === "PERCENTAGE") {
       const discountAmount = (discountCode.value / 100) * cartDetails.total;
-      return discountAmount;
+      return parseFloat(discountAmount.toFixed(2));
     }
-    return ''
+    return "";
   }, [cartDetails.total, discountCode]);
 
   const onPlaceOrder = async () => {
@@ -222,7 +222,7 @@ function CartPage() {
       }));
     }
   };
-  console.log(discountCode, "---", getDiscountValue);
+  
 
   return (
     <Card className="container  mx-auto px-4 py-8 flex flex-col gap-5">
@@ -264,14 +264,11 @@ function CartPage() {
           <p>Subtotal : {cartDetails.total}</p>
           {getDiscountValue ? (
             <>
-            <p>
-              Discount Applied({discountCode?.name}) : -{getDiscountValue}
-            </p>
+              <p>
+                Discount Applied({discountCode?.name}) : - {getDiscountValue}
+              </p>
 
-            <p>
-              Total : {cartDetails.total-getDiscountValue}
-            </p>
-            
+              <p>Total : {(cartDetails.total - getDiscountValue).toFixed(2)}</p>
             </>
           ) : null}
           <Button onClick={onPlaceOrder} className="w-full sm:w-fit">
