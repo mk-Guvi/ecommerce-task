@@ -1,26 +1,23 @@
 "use client";
 
-import { CartItem } from "@/types";
+import { apiEndpoints } from "@/constants/apiEndPoints";
+import {  GetCartItems } from "@/types";
+import axios from "axios";
 import React from "react";
 
 type GlobalProviderProps = {
-  carts: CartItem[];
-  setCarts: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  cartDetails: GetCartItems;
+  setCartDetails: React.Dispatch<React.SetStateAction<GetCartItems>>;
+  getCartDetails: () => Promise<void>;
 };
 
 const initialValues: GlobalProviderProps = {
-  carts: [
-    {
-      product: {
-        id: 1,
-        images: [],
-        title: "",
-        price: 1,
-      },
-      quantity: 1,
-    },
-  ],
-  setCarts: () => undefined,
+  cartDetails: {
+    carts:[],
+    total:0
+  },
+  setCartDetails: () => undefined,
+  getCartDetails: async () => {},
 };
 
 type WithChildProps = {
@@ -31,11 +28,28 @@ const context = React.createContext(initialValues);
 const { Provider } = context;
 
 export const GlobalProvider = ({ children }: WithChildProps) => {
-  const [carts, setCarts] = React.useState(initialValues.carts);
+  const [cartDetails, setCartDetails] = React.useState<GetCartItems>(initialValues.cartDetails);
+  const getCartDetails = async () => {
+    try {
+      const response = await axios.get(apiEndpoints.carts);
+      if (response?.data?.type === "success") {
+        setCartDetails(response?.data?.data);
+      } else {
+        throw new Error(response?.data?.message || "Failed to get carts");
+      }
+    } catch (e) {
+      console.log(e);
+      setCartDetails({
+        carts:[],
+        total:0
+      });
+    }
+  };
 
   const values = {
-    carts,
-    setCarts,
+    cartDetails,
+    setCartDetails,
+    getCartDetails,
   };
 
   return <Provider value={values}>{children}</Provider>;

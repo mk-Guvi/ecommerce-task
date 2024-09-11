@@ -1,18 +1,27 @@
 import { apiEndpoints } from "@/constants/apiEndPoints";
-import { CartItem, Order } from "../types";
+import { CartItem, DiscountCode, GetCartItems, Order } from "../types";
 import axios from "axios";
 import { LANG } from "@/constants";
 
 class Store {
   private cart: CartItem[] = [];
   private orders: Order[] = [];
-  private discountCodes: string[] = [];
+  private discountCodes: DiscountCode[] = [];
   private orderCount: number = 0;
   private readonly DISCOUNT_INTERVAL: number = 3;
-  private readonly DISCOUNT_PERCENTAGE: number = 0.1;
+  private readonly DISCOUNT_PERCENTAGE: number = 10;
 
-  getCart(): CartItem[] {
-    return this.cart;
+  getCartDetails(): GetCartItems {
+    return {
+      carts: this.cart,
+      total: parseFloat(
+        this.cart
+          ?.reduce((a, b) => {
+            return a + b.product.price * b.quantity;
+          }, 0)
+          .toFixed(2)
+      ),
+    };
   }
 
   async addToCart(productId: number, quantity: number): Promise<void> {
@@ -52,11 +61,38 @@ class Store {
     }
   }
 
+  async UpdateCartItem(productId: number, quantity: number): Promise<void> {
+    const productResponse = await axios.get(
+      `${apiEndpoints.products}/${productId}`,
+      {
+        validateStatus: () => true,
+      }
+    );
+    if (!productResponse?.data?.id) {
+      throw new Error("Product Not Found.");
+    }
+
+    const existingItem = this.cart.find(
+      (item) => item.product.id === productId
+    );
+
+    if (existingItem) {
+      const updatedQuantity = existingItem.quantity + quantity;
+      if (updatedQuantity > productResponse?.data?.stock) {
+        throw new Error(LANG.QUANTITY_EXCEEDED_ERR_MESSAGE);
+      }
+      existingItem.quantity = updatedQuantity;
+    } else {
+      throw new Error("Product Not Found.")
+    }
+  }
+
   removeFromCart(productId: number): {
     type: "success" | "error";
     message: string;
   } {
     let isItemFound = false;
+
     this.cart = this.cart.filter((item) => {
       if (item.product.id === productId) {
         isItemFound = true;
@@ -71,7 +107,7 @@ class Store {
     } else {
       return {
         type: "error",
-        message: "Invalid product id",
+        message: "Product Not Found.",
       };
     }
   }
@@ -87,17 +123,20 @@ class Store {
     );
   }
 
-  checkout(discountCode?: string): Order {
+  checkout(discountCode?: DiscountCode): Order {
     if (this.cart.length === 0) throw new Error("Cart is empty");
 
     let total = this.calculateTotal();
     let discount = 0;
 
-    if (discountCode && this.discountCodes.includes(discountCode)) {
+    if (
+      discountCode &&
+      this.discountCodes.some((e) => e.name === discountCode.name)
+    ) {
       discount = total * this.DISCOUNT_PERCENTAGE;
       total -= discount;
       this.discountCodes = this.discountCodes.filter(
-        (code) => code !== discountCode
+        (code) => code.name !== discountCode.name
       );
     }
 
@@ -112,18 +151,22 @@ class Store {
     this.orders.push(order);
     this.clearCart();
     this.orderCount++;
-
-    if (this.orderCount % this.DISCOUNT_INTERVAL === 0) {
-      this.generateDiscountCode();
-    }
-
     return order;
   }
 
-  public generateDiscountCode(): string {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    this.discountCodes.push(code);
-    return code;
+  public generateDiscountCode(): DiscountCode|string {
+    console.log(this.orderCount,"this.orderCount")
+    if (this.orderCount && this.orderCount % this.DISCOUNT_INTERVAL === 0) {
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const data:DiscountCode={
+        name: code,
+        type: "PERCENTAGE",
+        value: this.DISCOUNT_PERCENTAGE,
+      }
+      this.discountCodes.push(data);
+      return data;
+    }
+    return "";
   }
 
   getStats() {

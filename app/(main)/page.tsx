@@ -12,8 +12,10 @@ import {
 import { useChangeListener } from "@/hooks.ts";
 import { toast } from "sonner";
 import { LANG } from "@/constants";
+import { useGlobal } from "@/providers/GlobalProvider";
 
 export default function Home() {
+  const { setCartDetails } = useGlobal();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [pageNumber, setPageNumber] = useState(1);
@@ -63,6 +65,7 @@ export default function Home() {
     },
     [recordChanges]
   );
+
   const addToCart = async (product: Product, quantity: number) => {
     try {
       setDisabledActionId((prev) => ({ ...prev, [product.id]: true }));
@@ -77,11 +80,13 @@ export default function Home() {
         }
       );
       if (response?.data?.type === "success") {
+        setCartDetails(response?.data?.data)
         toast("Success", {
           description: `Successfully added to the cart`,
           className: "!bg-white",
           closeButton: true,
         });
+        
       } else {
         throw new Error(response?.data?.message || LANG.NETWORK_ERROR);
       }
@@ -99,7 +104,9 @@ export default function Home() {
     }
   };
 
-  const handleAddToCart = async (evnt: React.MouseEvent<HTMLElement>) => {
+  
+
+  const handleOnClick = async (evnt: React.MouseEvent<HTMLElement>) => {
     evnt.stopPropagation();
     const target = evnt?.target as HTMLElement;
 
@@ -141,7 +148,7 @@ export default function Home() {
       <h1 className="text-3xl font-bold mb-8">Products</h1>
       <div
         className="grid grid-cols-1 w-full sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-12"
-        onClick={handleAddToCart}
+        onClick={handleOnClick}
       >
         {loading
           ? Array.from({ length: 15 }).map((_, index) => (
