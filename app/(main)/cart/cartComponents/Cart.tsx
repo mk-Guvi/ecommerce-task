@@ -5,7 +5,6 @@ import { ShoppingCart, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CartItem } from "@/types";
-import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import {
   Carousel,
@@ -14,6 +13,7 @@ import {
 } from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import React, { useEffect, useMemo } from "react";
+import OptimizedImage from "@/components/optimizedImage";
 
 export function Cart() {
   const { cartDetails, getCartDetails } = useGlobal();
@@ -53,7 +53,7 @@ export const CartCard = (props: CartCardPropsI) => {
           {cart.product.images.map((e, index) => (
             <CarouselItem key={index} className="h-[120px]  ">
               <Card>
-                <Image
+                <OptimizedImage
                   src={e}
                   className="object-contain h-[120px] !w-full"
                   alt={cart.product.title}

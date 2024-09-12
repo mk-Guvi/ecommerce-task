@@ -3,9 +3,8 @@
 import { apiEndpoints } from "@/constants/apiEndPoints";
 import { Product } from "@/types";
 import axios from "axios";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, Suspense, lazy } from "react";
 import {
-  ProductCard,
   ProductCardLoader,
   ProductsPagination,
 } from "./products/productsComponents";
@@ -13,6 +12,8 @@ import { useChangeListener } from "@/hooks.ts";
 import { toast } from "sonner";
 import { LANG } from "@/constants";
 import { useGlobal } from "@/providers/GlobalProvider";
+
+const ProductCard = lazy(() => import("./products/ProductCard"));
 
 export default function Home() {
   const { setCartDetails } = useGlobal();
@@ -80,13 +81,12 @@ export default function Home() {
         }
       );
       if (response?.data?.type === "success") {
-        setCartDetails(response?.data?.data)
+        setCartDetails(response?.data?.data);
         toast("Success", {
           description: `Successfully added to the cart`,
           className: "!bg-white",
           closeButton: true,
         });
-        
       } else {
         throw new Error(response?.data?.message || LANG.NETWORK_ERROR);
       }
@@ -103,8 +103,6 @@ export default function Home() {
       setDisabledActionId((prev) => ({ ...prev, [product.id]: false }));
     }
   };
-
-  
 
   const handleOnClick = async (evnt: React.MouseEvent<HTMLElement>) => {
     evnt.stopPropagation();
@@ -155,11 +153,12 @@ export default function Home() {
               <ProductCardLoader key={index} />
             ))
           : products.map((product) => (
-              <ProductCard
-                product={product}
-                disabledActions={disabledActions}
-                key={product.id}
-              />
+              <Suspense fallback={<ProductCardLoader />} key={product.id}>
+                <ProductCard
+                  product={product}
+                  disabledActions={disabledActions}
+                />
+              </Suspense>
             ))}
       </div>
       {totalPages ? (
